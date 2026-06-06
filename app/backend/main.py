@@ -6,6 +6,7 @@ Run with: uvicorn backend.main:app --reload --port 8000
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pathlib import Path
 
 from app.database.connection import init_db
@@ -53,3 +54,15 @@ def startup():
 @app.get("/api/health")
 def health():
     return {"status": "ok", "app": "Rosee Instagram Automation"}
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "public"
+INDEX_HTML = FRONTEND_DIR / "index.html"
+
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    if full_path.startswith("api/"):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=404, content={"detail": "Not found"})
+    if INDEX_HTML.exists():
+        return FileResponse(str(INDEX_HTML), media_type="text/html")
+    return JSONResponse(status_code=404, content={"detail": "Frontend not built"})
