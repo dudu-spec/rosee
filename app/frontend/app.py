@@ -13,7 +13,7 @@ from collections import Counter
 import os
 import html
 
-API_BASE = os.environ.get("API_BASE", "http://localhost:8000")
+API_BASE = os.environ.get("API_BASE", "https://rosee-bay.vercel.app")
 BRASIL_TZ = timezone(timedelta(hours=-3))
 
 # ── PAGE CONFIG ──

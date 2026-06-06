@@ -1,4 +1,6 @@
-# Backend only (Vercel uses this)
+# Frontend + Backend (Streamlit Cloud uses this)
+streamlit==1.33.0
+plotly==5.20.0
 fastapi==0.110.0
 uvicorn[standard]==0.29.0
 Pillow==10.3.0
