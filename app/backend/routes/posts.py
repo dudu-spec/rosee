@@ -55,7 +55,9 @@ async def upload_post(
         )
     except Exception as e:
         media_service.delete_media(media_path)
-        raise HTTPException(status_code=500, detail=f"Erro ao processar post: {str(e)}")
+        import traceback
+        detail = f"Erro ao processar: {str(e)} | {traceback.format_exc()[:500]}"
+        raise HTTPException(status_code=500, detail=detail)
 
     return post
 
