@@ -61,6 +61,13 @@ def health():
     return {"status": "ok", "app": "Rosee Instagram Automation"}
 
 
+@app.get("/")
+async def serve_root():
+    if INDEX_HTML_CONTENT is not None:
+        return HTMLResponse(content=INDEX_HTML_CONTENT, status_code=200)
+    return JSONResponse(status_code=404, content={"detail": "Frontend not built"})
+
+
 @app.get("/{full_path:path}")
 async def serve_frontend(full_path: str):
     if full_path.startswith("api/"):
