@@ -207,6 +207,8 @@ function closeSidebar() {
   }
 }
 
+function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;').replace(/`/g,'&#96;').replace(/\${/g,'&#36;&#123;'); }
+
 function toast(msg, type='info') {
   const t = document.createElement('div');
   t.className = `toast ${type}`;
@@ -338,16 +340,16 @@ function showUploadResult(post) {
     <h3>🤖 Resultado da IA</h3>
     <div style="margin-bottom:12px">
       <div class="badge badge-revisao">Revisão</div>
-      <div style="margin-top:8px;font-size:13px;color:rgba(255,255,255,.6);line-height:1.5">${post.ai_description || '—'}</div>
+      <div style="margin-top:8px;font-size:13px;color:rgba(255,255,255,.6);line-height:1.5">${esc(post.ai_description)}</div>
     </div>
     <div style="background:rgba(255,255,255,.03);border-radius:10px;padding:14px;margin-bottom:12px">
       <div style="font-size:13px;font-weight:600;margin-bottom:6px">📝 Legenda</div>
-      <div style="font-size:13px;color:rgba(255,255,255,.7);line-height:1.5">${post.ai_caption || '—'}</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.7);line-height:1.5">${esc(post.ai_caption)}</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-      ${(post.ai_hashtags || '').split(',').filter(Boolean).map(t => `<span class="tag">${t.trim()}</span>`).join('')}
+      ${(post.ai_hashtags || '').split(',').filter(Boolean).map(t => `<span class="tag">${esc(t.trim())}</span>`).join('')}
     </div>
-    <div style="font-size:12px;color:rgba(255,255,255,.4)">CTA: ${post.ai_cta || '—'}</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.4)">CTA: ${esc(post.ai_cta)}</div>
     <hr style="border:none;border-top:1px solid rgba(255,255,255,.06);margin:16px 0">
     <button class="btn btn-primary btn-sm" onclick="navigate('review')">✏️ Ir para Revisão</button>
   `;
@@ -370,18 +372,18 @@ async function renderReview() {
     let html = `<div class="page-title">✏️ Revisão</div><div class="page-subtitle">${posts.length} post(s) aguardando revisão</div>`;
     posts.forEach(p => {
       const date = p.created_at ? new Date(p.created_at).toLocaleString('pt-BR') : '';
-      html += `<div class="card post-card" onclick="renderPostDetail('${p.id}')">
+      html += `<div class="card post-card" onclick="renderPostDetail('${esc(p.id)}')">
         <div class="post-header">
           <span class="status-dot revisao"></span>
-          <span class="post-title">${(p.ai_caption || '').substring(0, 60)}...</span>
+          <span class="post-title">${esc((p.ai_caption || '').substring(0, 60))}...</span>
           <span class="badge badge-revisao">Revisão</span>
         </div>
-        <div class="post-meta">${date} ${p.price ? '· R$ ' + p.price.toFixed(2) : ''} ${p.sizes ? '· ' + p.sizes : ''}</div>
+        <div class="post-meta">${date} ${p.price ? '· R$ ' + p.price.toFixed(2) : ''} ${p.sizes ? '· ' + esc(p.sizes) : ''}</div>
       </div>`;
     });
     el.innerHTML = html;
   } catch(e) {
-    el.innerHTML = `<div class="page-title">✏️ Revisão</div><div class="empty-state"><div class="icon">❌</div>Erro: ${e.message}</div>`;
+    el.innerHTML = `<div class="page-title">✏️ Revisão</div><div class="empty-state"><div class="icon">❌</div>Erro: ${esc(e.message)}</div>`;
   }
 }
 
@@ -391,6 +393,7 @@ async function renderPostDetail(postId) {
   el.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
   try {
     const post = await api('/api/posts/' + postId);
+    const escPost = (v) => esc(v);
     el.innerHTML = `
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
         <button class="btn btn-secondary btn-sm" onclick="currentPostId=null;renderReview()">← Voltar</button>
@@ -400,15 +403,15 @@ async function renderPostDetail(postId) {
         <div>
           <div class="card">
             <h3>📸 Preview</h3>
-            <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:8px">${post.ai_description || ''}</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:8px">${escPost(post.ai_description)}</div>
           </div>
           <div class="card">
             <h3>📝 Legenda (edite se quiser)</h3>
-            <textarea id="edit-caption" rows="4">${post.final_caption || post.ai_caption || ''}</textarea>
+            <textarea id="edit-caption" rows="4">${escPost(post.final_caption || post.ai_caption)}</textarea>
             <label>CTA</label>
-            <input type="text" id="edit-cta" value="${post.final_cta || post.ai_cta || ''}">
+            <input type="text" id="edit-cta" value="${escPost(post.final_cta || post.ai_cta)}">
             <label>Hashtags (separadas por vírgula)</label>
-            <input type="text" id="edit-hashtags" value="${post.final_hashtags || post.ai_hashtags || ''}">
+            <input type="text" id="edit-hashtags" value="${escPost(post.final_hashtags || post.ai_hashtags)}">
           </div>
         </div>
         <div>
@@ -424,24 +427,24 @@ async function renderPostDetail(postId) {
               <option value="dica" ${(post.final_category || post.ai_category) === 'dica' ? 'selected' : ''}>Dica</option>
             </select>
             <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-              <button class="btn btn-primary" onclick="approvePost('${postId}')">✅ Aprovar e Agendar</button>
-              <button class="btn btn-danger" onclick="discardPost('${postId}')">🗑️ Descartar</button>
+              <button class="btn btn-primary" onclick="approvePost('${esc(postId)}')">✅ Aprovar e Agendar</button>
+              <button class="btn btn-danger" onclick="discardPost('${esc(postId)}')">🗑️ Descartar</button>
             </div>
           </div>
           <div class="card">
             <h3>🤖 Conteúdo Original da IA</h3>
             <div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.5;margin-bottom:8px">
-              <strong>Legenda:</strong> ${post.ai_caption || '—'}<br>
-              <strong>CTA:</strong> ${post.ai_cta || '—'}<br>
-              <strong>Hashtags:</strong> ${post.ai_hashtags || '—'}<br>
-              <strong>Categoria:</strong> ${post.ai_category || '—'}
+              <strong>Legenda:</strong> ${escPost(post.ai_caption)}<br>
+              <strong>CTA:</strong> ${escPost(post.ai_cta)}<br>
+              <strong>Hashtags:</strong> ${escPost(post.ai_hashtags)}<br>
+              <strong>Categoria:</strong> ${escPost(post.ai_category)}
             </div>
           </div>
         </div>
       </div>
     `;
   } catch(e) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">❌</div>Erro: ${e.message}</div>`;
+    el.innerHTML = `<div class="empty-state"><div class="icon">❌</div>Erro: ${esc(e.message)}</div>`;
   }
 }
 
@@ -505,16 +508,16 @@ async function renderSchedule() {
       html += `<div class="card post-card">
         <div class="post-header">
           <span class="status-dot agendado"></span>
-          <span class="post-title">${(p.final_caption || p.ai_caption || '').substring(0, 60)}...</span>
+          <span class="post-title">${esc((p.final_caption || p.ai_caption || '').substring(0, 60))}...</span>
           <span class="badge badge-agendado">${dt}</span>
         </div>
-        <div class="post-meta">${p.price ? 'R$ ' + p.price.toFixed(2) : ''} ${p.sizes ? '· ' + p.sizes : ''}</div>
-        <button class="btn btn-danger btn-sm" onclick="cancelPost('${p.id}')" style="margin-top:8px">Cancelar</button>
+        <div class="post-meta">${p.price ? 'R$ ' + p.price.toFixed(2) : ''} ${p.sizes ? '· ' + esc(p.sizes) : ''}</div>
+        <button class="btn btn-danger btn-sm" onclick="cancelPost('${esc(p.id)}')" style="margin-top:8px">Cancelar</button>
       </div>`;
     });
     el.innerHTML = html;
   } catch(e) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">❌</div>Erro: ${e.message}</div>`;
+    el.innerHTML = `<div class="empty-state"><div class="icon">❌</div>Erro: ${esc(e.message)}</div>`;
   }
 }
 
@@ -546,14 +549,14 @@ async function renderPublished() {
       html += `<div class="card post-card">
         <div class="post-header">
           <span class="status-dot publicado"></span>
-          <span class="post-title">${(p.final_caption || p.ai_caption || '').substring(0, 80)}...</span>
+          <span class="post-title">${esc((p.final_caption || p.ai_caption || '').substring(0, 80))}...</span>
           <span class="badge badge-publicado">${dt}</span>
         </div>
       </div>`;
     });
     el.innerHTML = html;
   } catch(e) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">❌</div>Erro: ${e.message}</div>`;
+    el.innerHTML = `<div class="empty-state"><div class="icon">❌</div>Erro: ${esc(e.message)}</div>`;
   }
 }
 
@@ -575,7 +578,7 @@ async function renderSettings() {
         <div class="card">
           <h3>🏪 Dados da Loja</h3>
           <label>Nome da Loja</label>
-          <input type="text" id="s-store-name" value="${s.store_name || 'Minha Loja'}">
+          <input type="text" id="s-store-name" value="${esc(s.store_name || 'Minha Loja')}">
           <label>Tom de Voz</label>
           <select id="s-brand-voice">
             <option value="amigavel" ${s.brand_voice === 'amigavel' ? 'selected' : ''}>Amigável</option>
@@ -599,13 +602,13 @@ async function renderSettings() {
         <div class="card">
           <h3>📱 Instagram</h3>
           <label>Meta App ID</label>
-          <input type="text" id="s-meta-app-id" value="${s.meta_app_id || ''}">
+          <input type="text" id="s-meta-app-id" value="${esc(s.meta_app_id)}">
           <label>Meta App Secret</label>
           <input type="password" id="s-meta-app-secret" value="${s.meta_app_secret ? '****' : ''}">
           <label>Access Token</label>
           <input type="password" id="s-meta-token" value="${s.meta_access_token ? '****' : ''}">
           <label>Instagram Business Account ID</label>
-          <input type="text" id="s-meta-ig-id" value="${s.meta_ig_user_id || ''}">
+          <input type="text" id="s-meta-ig-id" value="${esc(s.meta_ig_user_id)}">
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-primary btn-sm" onclick="saveMeta()">💾 Salvar</button>
             <button class="btn btn-secondary btn-sm" onclick="testMeta()">🔗 Testar</button>
@@ -614,7 +617,7 @@ async function renderSettings() {
       </div>
     `;
   } catch(e) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">❌</div>Erro: ${e.message}</div>`;
+    el.innerHTML = `<div class="empty-state"><div class="icon">❌</div>Erro: ${esc(e.message)}</div>`;
   }
 }
 
