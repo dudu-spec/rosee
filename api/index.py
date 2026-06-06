@@ -1,12 +1,4 @@
 """Vercel serverless entry point."""
-import sys, os
-from pathlib import Path
-
-_root = Path(__file__).resolve().parent.parent
-if str(_root) not in sys.path:
-    sys.path.insert(0, str(_root))
-
-os.environ["VERCEL"] = "1"
-os.environ.setdefault("OPENROUTER_TIMEOUT", "5")
-
-from app.backend.main import app
+def app(environ, start_response):
+    start_response("200 OK", [("Content-Type", "application/json")])
+    return [b'{"status":"ok"}']
