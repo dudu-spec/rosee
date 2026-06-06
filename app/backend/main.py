@@ -47,7 +47,7 @@ def startup():
     global FRONTEND_HTML
     init_db()
     try:
-        p = Path("public/index.html").resolve()
+        p = Path("api/static/index.html").resolve()
         if p.exists():
             FRONTEND_HTML = p.read_text(encoding="utf-8")
     except Exception:

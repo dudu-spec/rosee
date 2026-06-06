@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Rosee | Automação Instagram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e4e4ed;font-family:'Inter',sans-serif;min-height:100vh;display:flex}
+.sidebar{width:240px;min-height:100vh;background:linear-gradient(180deg,rgba(15,15,25,.98),rgba(20,10,40,.98));border-right:1px solid rgba(139,92,246,.12);padding:24px 16px;position:fixed;left:0;top:0;z-index:100}
+.sidebar-logo{text-align:center;padding:20px 0 24px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sidebar-logo .icon{font-size:40px;margin-bottom:4px}
+.sidebar-logo h1{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px}
+.sidebar-logo p{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.nav-item{padding:12px 16px;border-radius:12px;margin:4px 0;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:12px;font-size:14px;font-weight:500;color:rgba(255,255,255,.6)}
+.nav-item:hover{background:rgba(139,92,246,.1);color:#e4e4ed}
+.nav-item.active{background:rgba(139,92,246,.15);color:#8B5CF6;font-weight:600}
+.main{margin-left:240px;flex:1;padding:32px 40px;max-width:1200px}
+.page-title{font-size:28px;font-weight:700;margin-bottom:4px;background:linear-gradient(135deg,#fff,#8B5CF6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.page-subtitle{font-size:14px;color:rgba(255,255,255,.4);margin-bottom:24px}
+.card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:24px;margin-bottom:16px;backdrop-filter:blur(20px);transition:.2s}
+.card:hover{border-color:rgba(139,92,246,.15)}
+.card h3{font-size:16px;font-weight:600;margin-bottom:16px;color:#e4e4ed}
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.3px}
+.badge-revisao{background:rgba(255,193,7,.12);color:#ffc107}
+.badge-agendado{background:rgba(33,150,243,.12);color:#2196f3}
+.badge-publicado{background:rgba(76,175,80,.12);color:#4caf50}
+.badge-falha{background:rgba(233,30,99,.12);color:#e91e63}
+.badge-rascunho{background:rgba(158,158,158,.12);color:#9e9e9e}
+input,textarea,select{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#e4e4ed;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:.2s;margin-bottom:12px}
+input:focus,textarea:focus,select:focus{border-color:#8B5CF6;box-shadow:0 0 0 3px rgba(139,92,246,.1)}
+input::placeholder,textarea::placeholder{color:rgba(255,255,255,.2)}
+textarea{resize:vertical;min-height:60px}
+label{font-size:13px;font-weight:500;color:rgba(255,255,255,.6);display:block;margin-bottom:4px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:10px;border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;transition:.2s}
+.btn-primary{background:linear-gradient(135deg,#8B5CF6,#7c3aed);color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(139,92,246,.3)}
+.btn-secondary{background:rgba(255,255,255,.06);color:#e4e4ed;border:1px solid rgba(255,255,255,.08)}
+.btn-secondary:hover{background:rgba(255,255,255,.1)}
+.btn-danger{background:rgba(233,30,99,.15);color:#e91e63}
+.btn-danger:hover{background:rgba(233,30,99,.25)}
+.btn-sm{padding:6px 14px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+.grid{display:grid;gap:16px}
+.grid-2{grid-template-columns:1fr 1fr}
+.grid-3{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:768px){.grid-2,.grid-3{grid-template-columns:1fr}}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.status-dot.revisao{background:#ffc107}
+.status-dot.agendado{background:#2196f3}
+.status-dot.publicado{background:#4caf50}
+.status-dot.falha{background:#e91e63}
+.empty-state{text-align:center;padding:40px 0;color:rgba(255,255,255,.25)}
+.empty-state .icon{font-size:48px;margin-bottom:12px}
+.hidden{display:none!important}
+.loading{display:flex;align-items:center;justify-content:center;padding:60px}
+.spinner{width:32px;height:32px;border:3px solid rgba(139,92,246,.15);border-top-color:#8B5CF6;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:999;display:flex;align-items:center;justify-content:center}
+.modal{background:#1a1a2e;border:1px solid rgba(139,92,246,.2);border-radius:20px;padding:32px;width:90%;max-width:640px;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:20px;margin-bottom:16px}
+.modal-close{position:absolute;top:16px;right:20px;font-size:24px;cursor:pointer;color:rgba(255,255,255,.4)}
+.toast{position:fixed;top:24px;right:24px;padding:14px 24px;border-radius:12px;font-size:14px;z-index:9999;animation:slideIn .3s;max-width:400px}
+.toast.success{background:rgba(76,175,80,.15);border:1px solid rgba(76,175,80,.3);color:#4caf50}
+.toast.error{background:rgba(233,30,99,.15);border:1px solid rgba(233,30,99,.3);color:#e91e63}
+.toast.info{background:rgba(33,150,243,.15);border:1px solid rgba(33,150,243,.3);color:#2196f3}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.post-card{padding:16px;margin-bottom:12px;cursor:pointer}
+.post-card .post-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.post-card .post-title{font-size:14px;font-weight:500;flex:1;margin:0 12px}
+.post-card .post-meta{font-size:12px;color:rgba(255,255,255,.4)}
+.preview-img{max-width:100%;max-height:300px;border-radius:12px;margin:12px 0}
+.tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:0}
+.tab{padding:10px 20px;cursor:pointer;border-radius:10px 10px 0 0;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);transition:.2s;border-bottom:2px solid transparent}
+.tab:hover{color:#e4e4ed;background:rgba(255,255,255,.03)}
+.tab.active{color:#8B5CF6;border-bottom-color:#8B5CF6;background:rgba(139,92,246,.05)}
+.settings-section{margin-bottom:24px}
+.settings-section h4{font-size:14px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(139,92,246,.1);color:#8B5CF6;font-size:11px;margin:2px}
+</style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="icon">🌸</div>
+    <h1>Rosee</h1>
+    <p>Instagram Automation</p>
+  </div>
+  <div style="margin-top:24px">
+    <div class="nav-item active" onclick="navigate('upload')" id="nav-upload">📤 Upload</div>
+    <div class="nav-item" onclick="navigate('review')" id="nav-review">✏️ Revisão</div>
+    <div class="nav-item" onclick="navigate('schedule')" id="nav-schedule">📅 Agenda</div>
+    <div class="nav-item" onclick="navigate('published')" id="nav-published">✅ Publicados</div>
+    <div class="nav-item" onclick="navigate('settings')" id="nav-settings">⚙️ Config</div>
+  </div>
+  <div style="margin-top:auto;padding-top:24px;border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:rgba(255,255,255,.25);text-align:center">
+    AI: <span id="ai-status">—</span>
+  </div>
+</div>
+
+<div class="main" id="main">
+  <div id="page-upload"></div>
+  <div id="page-review" class="hidden"></div>
+  <div id="page-schedule" class="hidden"></div>
+  <div id="page-published" class="hidden"></div>
+  <div id="page-settings" class="hidden"></div>
+</div>
+
+<script>
+const API = window.location.origin; // same-origin (Vercel serves both frontend + API)
+
+function toast(msg, type='info') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+async function api(url, opts={}) {
+  try {
+    const res = await fetch(API + url, { ...opts, headers: { ...opts.headers, 'Accept': 'application/json' } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || data.message || JSON.stringify(data));
+    return data;
+  } catch(e) {
+    if (e.message.includes('Failed to fetch')) throw new Error('Backend offline');
+    throw e;
+  }
+}
+
+async function apiUpload(url, formData) {
+  try {
+    const res = await fetch(API + url, { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
+    return data;
+  } catch(e) {
+    if (e.message.includes('Failed to fetch')) throw new Error('Backend offline');
+    throw e;
+  }
+}
+
+function navigate(page) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('nav-' + page).classList.add('active');
+  document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.add('hidden'));
+  document.getElementById('page-' + page).classList.remove('hidden');
+  if (page === 'upload') renderUpload();
+  if (page === 'review') renderReview();
+  if (page === 'schedule') renderSchedule();
+  if (page === 'published') renderPublished();
+  if (page === 'settings') renderSettings();
+}
+
+async function init() {
+  try {
+    const s = await api('/api/posts/ai-status');
+    document.getElementById('ai-status').textContent = s.using_cloud_ai ? '☁️ Nuvem' : '💻 Local';
+  } catch(e) {
+    document.getElementById('ai-status').textContent = '❌ Offline';
+  }
+  renderUpload();
+}
+init();
+
+// ───── Upload Page ─────
+function renderUpload() {
+  const el = document.getElementById('page-upload');
+  el.innerHTML = `
+    <div class="page-title">📤 Criar Postagem</div>
+    <div class="page-subtitle">Envie a foto e veja a IA gerar descrição e legenda automaticamente</div>
+    <div class="grid grid-2">
+      <div>
+        <div class="card">
+          <h3>📸 Foto</h3>
+          <input type="file" id="upload-file" accept="image/*" onchange="previewFile(event)">
+          <img id="upload-preview" class="preview-img hidden" />
+          <label>Descrição (opcional)</label>
+          <textarea id="upload-input" placeholder="Ex: Vestido novo verão 2026, tecido leve"></textarea>
+          <div class="grid grid-2">
+            <div>
+              <label>Preço (R$)</label>
+              <input type="number" id="upload-price" step="0.01" min="0" placeholder="89,90">
+            </div>
+            <div>
+              <label>Tamanhos</label>
+              <input type="text" id="upload-sizes" placeholder="P, M, G">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="uploadPost()" id="upload-btn">🚀 Analisar com IA</button>
+        </div>
+      </div>
+      <div>
+        <div class="card" id="upload-result">
+          <h3>🤖 Resultado da IA</h3>
+          <div class="empty-state"><div class="icon">✨</div>Envie uma foto para ver a análise</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function previewFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const img = document.getElementById('upload-preview');
+    img.src = ev.target.result;
+    img.classList.remove('hidden');
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadPost() {
+  const file = document.getElementById('upload-file').files[0];
+  if (!file) { toast('Selecione uma foto', 'error'); return; }
+  const btn = document.getElementById('upload-btn');
+  btn.disabled = true; btn.textContent = '⏳ Analisando...';
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('user_input', document.getElementById('upload-input').value);
+  fd.append('price', document.getElementById('upload-price').value || '');
+  fd.append('sizes', document.getElementById('upload-sizes').value);
+  try {
+    const post = await apiUpload('/api/posts/upload', fd);
+    showUploadResult(post);
+    toast('✅ Foto analisada com sucesso!', 'success');
+  } catch(e) {
+    toast('Erro: ' + e.message, 'error');
+  }
+  btn.disabled = false; btn.textContent = '🚀 Analisar com IA';
+}
+
+function showUploadResult(post) {
+  const el = document.getElementById('upload-result');
+  el.innerHTML = `
+    <h3>🤖 Resultado da IA</h3>
+    <div style="margin-bottom:12px">
+      <div class="badge badge-revisao">Revisão</div>
+      <div style="margin-top:8px;font-size:13px;color:rgba(255,255,255,.6);line-height:1.5">${post.ai_description || '—'}</div>
+    </div>
+    <div style="background:rgba(255,255,255,.03);border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px">📝 Legenda</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.7);line-height:1.5">${post.ai_caption || '—'}</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      ${(post.ai_hashtags || '').split(',').filter(Boolean).map(t => `<span class="tag">${t.trim()}</span>`).join('')}
+    </div>
+    <div style="font-size:12px;color:rgba(255,255,255,.4)">CTA: ${post.ai_cta || '—'}</div>
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,.06);margin:16px 0">
+    <button class="btn btn-primary btn-sm" onclick="navigate('review')">✏️ Ir para Revisão</button>
+  `;
+}
+
+// ───── Review Page ─────
+let currentPostId = null;
+
+async function renderReview() {
+  const el = document.getElementById('page-review');
+  if (currentPostId) { renderPostDetail(currentPostId); return; }
+  el.innerHTML = `<div class="page-title">✏️ Revisão</div><div class="page-subtitle">Posts aguardando sua aprovação</div><div class="loading"><div class="spinner"></div></div>`;
+  try {
+    const data = await api('/api/posts/?status=revisao');
+    const posts = data.posts || [];
+    if (!posts.length) {
+      el.innerHTML = `<div class="page-title">✏️ Revisão</div><div class="page-subtitle">Posts aguardando sua aprovação</div><div class="empty-state"><div class="icon">✅</div>Nenhum post pendente de revisão</div>`;
+      return;
+    }
+    let html = `<div class="page-title">✏️ Revisão</div><div class="page-subtitle">${posts.length} post(s) aguardando revisão</div>`;
+    posts.forEach(p => {
+      const date = p.created_at ? new Date(p.created_at).toLocaleString('pt-BR') : '';
+      html += `<div class="card post-card" onclick="renderPostDetail('${p.id}')">
+        <div class="post-header">
+          <span class="status-dot revisao"></span>
+          <span class="post-title">${(p.ai_caption || '').substring(0, 60)}...</span>
+          <span class="badge badge-revisao">Revisão</span>
+        </div>
+        <div class="post-meta">${date} ${p.price ? '· R$ ' + p.price.toFixed(2) : ''} ${p.sizes ? '· ' + p.sizes : ''}</div>
+      </div>`;
+    });
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div class="page-title">✏️ Revisão</div><div class="empty-state"><div class="icon">❌</div>Erro: ${e.message}</div>`;
+  }
+}
+
+async function renderPostDetail(postId) {
+  currentPostId = postId;
+  const el = document.getElementById('page-review');
+  el.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
+  try {
+    const post = await api('/api/posts/' + postId);
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <button class="btn btn-secondary btn-sm" onclick="currentPostId=null;renderReview()">← Voltar</button>
+        <div class="page-title" style="font-size:22px;margin:0">✏️ Revisar Post</div>
+      </div>
+      <div class="grid grid-2">
+        <div>
+          <div class="card">
+            <h3>📸 Preview</h3>
+            <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:8px">${post.ai_description || ''}</div>
+          </div>
+          <div class="card">
+            <h3>📝 Legenda (edite se quiser)</h3>
+            <textarea id="edit-caption" rows="4">${post.final_caption || post.ai_caption || ''}</textarea>
+            <label>CTA</label>
+            <input type="text" id="edit-cta" value="${post.final_cta || post.ai_cta || ''}">
+            <label>Hashtags (separadas por vírgula)</label>
+            <input type="text" id="edit-hashtags" value="${post.final_hashtags || post.ai_hashtags || ''}">
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <h3>📅 Agendamento</h3>
+            <label>Data e hora</label>
+            <input type="datetime-local" id="edit-schedule">
+            <label>Categoria</label>
+            <select id="edit-category">
+              <option value="look" ${(post.final_category || post.ai_category) === 'look' ? 'selected' : ''}>Look</option>
+              <option value="novidade" ${(post.final_category || post.ai_category) === 'novidade' ? 'selected' : ''}>Novidade</option>
+              <option value="promocao" ${(post.final_category || post.ai_category) === 'promocao' ? 'selected' : ''}>Promoção</option>
+              <option value="dica" ${(post.final_category || post.ai_category) === 'dica' ? 'selected' : ''}>Dica</option>
+            </select>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn btn-primary" onclick="approvePost('${postId}')">✅ Aprovar e Agendar</button>
+              <button class="btn btn-danger" onclick="discardPost('${postId}')">🗑️ Descartar</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>🤖 Conteúdo Original da IA</h3>
+            <div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.5;margin-bottom:8px">
+              <strong>Legenda:</strong> ${post.ai_caption || '—'}<br>
+              <strong>CTA:</strong> ${post.ai_cta || '—'}<br>
+              <strong>Hashtags:</strong> ${post.ai_hashtags || '—'}<br>
+              <strong>Categoria:</strong> ${post.ai_category || '—'}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">❌</div>Erro: ${e.message}</div>`;
+  }
+}
+
+async function approvePost(postId) {
+  const scheduledAt = document.getElementById('edit-schedule').value;
+  if (!scheduledAt) { toast('Selecione data e hora do agendamento', 'error'); return; }
+  const dt = new Date(scheduledAt);
+  const iso = dt.getFullYear() + '-' +
+    String(dt.getMonth()+1).padStart(2,'0') + '-' +
+    String(dt.getDate()).padStart(2,'0') + 'T' +
+    String(dt.getHours()).padStart(2,'0') + ':' +
+    String(dt.getMinutes()).padStart(2,'0') + ':00' + '-03:00';
+  try {
+    await api('/api/posts/' + postId + '/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        final_caption: document.getElementById('edit-caption').value,
+        final_cta: document.getElementById('edit-cta').value,
+        final_hashtags: document.getElementById('edit-hashtags').value,
+        final_category: document.getElementById('edit-category').value,
+        scheduled_at: iso,
+        final_template_id: ''
+      })
+    });
+    toast('✅ Post agendado com sucesso!', 'success');
+    currentPostId = null;
+    navigate('schedule');
+  } catch(e) {
+    toast('Erro: ' + e.message, 'error');
+  }
+}
+
+async function discardPost(postId) {
+  if (!confirm('Descartar este post?')) return;
+  try {
+    await api('/api/posts/' + postId, { method: 'DELETE' });
+    toast('🗑️ Post descartado', 'info');
+    currentPostId = null;
+    renderReview();
+  } catch(e) {
+    toast('Erro: ' + e.message, 'error');
+  }
+}
+
+// ───── Schedule Page ─────
+async function renderSchedule() {
+  const el = document.getElementById('page-schedule');
+  el.innerHTML = `<div class="page-title">📅 Agenda</div><div class="page-subtitle">Posts agendados</div><div class="loading"><div class="spinner"></div></div>`;
+  try {
+    const data = await api('/api/posts/?status=agendado');
+    const posts = data.posts || [];
+    if (!posts.length) {
+      el.innerHTML = `<div class="page-title">📅 Agenda</div><div class="page-subtitle">Posts agendados</div><div class="empty-state"><div class="icon">📅</div>Nenhum post agendado</div>`;
+      return;
+    }
+    posts.sort((a,b) => (a.scheduled_at||'').localeCompare(b.scheduled_at||''));
+    let html = `<div class="page-title">📅 Agenda</div><div class="page-subtitle">${posts.length} post(s) agendados</div>`;
+    posts.forEach(p => {
+      const dt = p.scheduled_at ? new Date(p.scheduled_at).toLocaleString('pt-BR') : '—';
+      html += `<div class="card post-card">
+        <div class="post-header">
+          <span class="status-dot agendado"></span>
+          <span class="post-title">${(p.final_caption || p.ai_caption || '').substring(0, 60)}...</span>
+          <span class="badge badge-agendado">${dt}</span>
+        </div>
+        <div class="post-meta">${p.price ? 'R$ ' + p.price.toFixed(2) : ''} ${p.sizes ? '· ' + p.sizes : ''}</div>
+        <button class="btn btn-danger btn-sm" onclick="cancelPost('${p.id}')" style="margin-top:8px">Cancelar</button>
+      </div>`;
+    });
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">❌</div>Erro: ${e.message}</div>`;
+  }
+}
+
+async function cancelPost(postId) {
+  if (!confirm('Cancelar este agendamento?')) return;
+  try {
+    await api('/api/posts/' + postId + '/cancel', { method: 'POST' });
+    toast('Agendamento cancelado', 'info');
+    renderSchedule();
+  } catch(e) {
+    toast('Erro: ' + e.message, 'error');
+  }
+}
+
+// ───── Published Page ─────
+async function renderPublished() {
+  const el = document.getElementById('page-published');
+  el.innerHTML = `<div class="page-title">✅ Publicados</div><div class="page-subtitle">Histórico de posts publicados</div><div class="loading"><div class="spinner"></div></div>`;
+  try {
+    const data = await api('/api/posts/?status=publicado');
+    const posts = data.posts || [];
+    if (!posts.length) {
+      el.innerHTML = `<div class="page-title">✅ Publicados</div><div class="page-subtitle">Histórico de posts publicados</div><div class="empty-state"><div class="icon">📸</div>Nenhum post publicado ainda</div>`;
+      return;
+    }
+    let html = `<div class="page-title">✅ Publicados</div><div class="page-subtitle">${posts.length} post(s) publicados</div>`;
+    posts.forEach(p => {
+      const dt = p.published_at ? new Date(p.published_at).toLocaleString('pt-BR') : '—';
+      html += `<div class="card post-card">
+        <div class="post-header">
+          <span class="status-dot publicado"></span>
+          <span class="post-title">${(p.final_caption || p.ai_caption || '').substring(0, 80)}...</span>
+          <span class="badge badge-publicado">${dt}</span>
+        </div>
+      </div>`;
+    });
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">❌</div>Erro: ${e.message}</div>`;
+  }
+}
+
+// ───── Settings Page ─────
+async function renderSettings() {
+  const el = document.getElementById('page-settings');
+  el.innerHTML = `<div class="page-title">⚙️ Configurações</div><div class="page-subtitle">Gerencie sua loja e integrações</div><div class="loading"><div class="spinner"></div></div>`;
+  try {
+    const s = await api('/api/settings/');
+    el.innerHTML = `
+      <div class="page-title">⚙️ Configurações</div>
+      <div class="page-subtitle">Gerencie sua loja e integrações</div>
+      <div class="tabs">
+        <div class="tab active" onclick="settingsTab(this,'loja')">🏪 Loja</div>
+        <div class="tab" onclick="settingsTab(this,'ia')">🤖 IA</div>
+        <div class="tab" onclick="settingsTab(this,'instagram')">📱 Instagram</div>
+      </div>
+      <div id="settings-loja">
+        <div class="card">
+          <h3>🏪 Dados da Loja</h3>
+          <label>Nome da Loja</label>
+          <input type="text" id="s-store-name" value="${s.store_name || 'Minha Loja'}">
+          <label>Tom de Voz</label>
+          <select id="s-brand-voice">
+            <option value="amigavel" ${s.brand_voice === 'amigavel' ? 'selected' : ''}>Amigável</option>
+            <option value="sofisticado" ${s.brand_voice === 'sofisticado' ? 'selected' : ''}>Sofisticado</option>
+            <option value="divertido" ${s.brand_voice === 'divertido' ? 'selected' : ''}>Divertido</option>
+            <option value="formal" ${s.brand_voice === 'formal' ? 'selected' : ''}>Formal</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="saveStore()">💾 Salvar</button>
+        </div>
+      </div>
+      <div id="settings-ia" class="hidden">
+        <div class="card">
+          <h3>🤖 Inteligência Artificial</h3>
+          <p style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:12px">Use OpenRouter (Gemini Flash grátis) para análise de imagens na nuvem.</p>
+          <label>OpenRouter API Key</label>
+          <input type="password" id="s-openrouter-key" value="${s.openrouter_key ? '****' : ''}" placeholder="sk-or-v1-...">
+          <button class="btn btn-primary btn-sm" onclick="saveIA()">💾 Salvar</button>
+        </div>
+      </div>
+      <div id="settings-instagram" class="hidden">
+        <div class="card">
+          <h3>📱 Instagram</h3>
+          <label>Meta App ID</label>
+          <input type="text" id="s-meta-app-id" value="${s.meta_app_id || ''}">
+          <label>Meta App Secret</label>
+          <input type="password" id="s-meta-app-secret" value="${s.meta_app_secret ? '****' : ''}">
+          <label>Access Token</label>
+          <input type="password" id="s-meta-token" value="${s.meta_access_token ? '****' : ''}">
+          <label>Instagram Business Account ID</label>
+          <input type="text" id="s-meta-ig-id" value="${s.meta_ig_user_id || ''}">
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" onclick="saveMeta()">💾 Salvar</button>
+            <button class="btn btn-secondary btn-sm" onclick="testMeta()">🔗 Testar</button>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">❌</div>Erro: ${e.message}</div>`;
+  }
+}
+
+function settingsTab(el, tab) {
+  document.querySelectorAll('#page-settings .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('[id^="settings-"]').forEach(s => s.classList.add('hidden'));
+  document.getElementById('settings-' + tab).classList.remove('hidden');
+}
+
+async function saveStore() {
+  try {
+    await api('/api/settings/', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({key:'store_name', value: document.getElementById('s-store-name').value}) });
+    await api('/api/settings/', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({key:'brand_voice', value: document.getElementById('s-brand-voice').value}) });
+    toast('✅ Dados da loja salvos!', 'success');
+  } catch(e) { toast('Erro: ' + e.message, 'error'); }
+}
+
+async function saveIA() {
+  const key = document.getElementById('s-openrouter-key').value;
+  if (!key || key === '****') { toast('Chave não alterada', 'info'); return; }
+  try {
+    await api('/api/settings/', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({key:'openrouter_key', value: key}) });
+    toast('✅ Chave OpenRouter salva!', 'success');
+  } catch(e) { toast('Erro: ' + e.message, 'error'); }
+}
+
+async function saveMeta() {
+  try {
+    const fields = [
+      ['meta_app_id', document.getElementById('s-meta-app-id').value],
+      ['meta_app_secret', document.getElementById('s-meta-app-secret').value],
+      ['meta_ig_user_id', document.getElementById('s-meta-ig-id').value],
+    ];
+    const token = document.getElementById('s-meta-token').value;
+    if (token && token !== '****') fields.push(['meta_access_token', token]);
+    for (const [k, v] of fields) {
+      await api('/api/settings/', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({key:k, value:v}) });
+    }
+    toast('✅ Configurações Meta salvas!', 'success');
+  } catch(e) { toast('Erro: ' + e.message, 'error'); }
+}
+
+async function testMeta() {
+  try {
+    const r = await api('/api/meta/test', { method: 'POST' });
+    toast(r.message || 'Conectado!', 'success');
+  } catch(e) { toast('Falha: ' + e.message, 'error'); }
+}
+</script>
+</body>
+</html>
