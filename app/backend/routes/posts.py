@@ -32,6 +32,7 @@ async def upload_post(
     user_input: str = Form(""),
     price: Optional[float] = Form(None),
     sizes: str = Form(""),
+    scheduled_at: str = Form(""),
     template_id: str = Form("tpl_feed_01"),
 ):
     file_bytes = await file.read()
@@ -49,6 +50,7 @@ async def upload_post(
             user_input=user_input,
             price=price,
             sizes=sizes,
+            scheduled_at=scheduled_at,
             template_id=template_id,
         )
     except Exception as e:

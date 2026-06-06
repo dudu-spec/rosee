@@ -14,7 +14,8 @@ BRASIL_TZ = timezone(timedelta(hours=-3))
 def create_post(media_path: str, media_type: str,
                 user_input: str = "", price: float = None,
                 sizes: str = "", template_id: str = "tpl_feed_01",
-                initial_status: str = "revisao") -> dict:
+                initial_status: str = "revisao",
+                scheduled_at: str = "") -> dict:
     """Create a new post: save to DB, run AI, apply template."""
     post_id = str(uuid.uuid4())
     now = datetime.now(BRASIL_TZ).isoformat()
@@ -32,14 +33,16 @@ def create_post(media_path: str, media_type: str,
     else:
         processed_path = apply_image_template(media_path, template_id, price, sizes)
 
+    effective_status = "agendado" if scheduled_at else initial_status
     data = {
         "id": post_id,
-        "status": initial_status,
+        "status": effective_status,
         "created_at": now,
         "updated_at": now,
         "user_input": user_input or "",
         "price": price,
         "sizes": sizes or "",
+        "scheduled_at": scheduled_at or "",
         "media_type": media_type,
         "media_path": media_path,
         "media_processed_path": processed_path or "",
