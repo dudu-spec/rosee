@@ -6,7 +6,10 @@ STORAGE_DIR = PROJECT_ROOT / "storage"
 PROCESSED_DIR = STORAGE_DIR / "processed"
 DB_PATH = STORAGE_DIR / "instagram_automation.db"
 
-os.makedirs(str(PROCESSED_DIR), exist_ok=True)
+try:
+    os.makedirs(str(PROCESSED_DIR), exist_ok=True)
+except PermissionError:
+    pass  # Vercel: filesystem is read-only
 
 # If true, publish job just prints instead of calling Meta API
 MOCK_META_API = False
