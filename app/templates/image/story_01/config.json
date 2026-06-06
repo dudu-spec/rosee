@@ -1,0 +1,19 @@
+{
+  "name": "Story Padr\u00e3o",
+  "target_width": 1080,
+  "target_height": 1920,
+  "background_color": "#FFFFFF",
+  "image_x": 0,
+  "image_y": 0,
+  "image_width": 1080,
+  "image_height": 1080,
+  "store_name_x": 40,
+  "store_name_y": 40,
+  "price_x": 40,
+  "price_y": 1840,
+  "sizes_x": 40,
+  "sizes_y": 1880,
+  "text_color": "#FFFFFF",
+  "price_color": "#E91E63",
+  "font_size": 40
+}
