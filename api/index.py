@@ -9,5 +9,13 @@ if str(_root) not in sys.path:
 os.environ["VERCEL"] = "1"
 os.environ.setdefault("OPENROUTER_TIMEOUT", "5")
 
-from app.backend.main import app
-handler = app
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+try:
+    from app.backend.main import app
+    logger.info("App imported successfully")
+except Exception as e:
+    logger.exception("Failed to import app")
+    raise
