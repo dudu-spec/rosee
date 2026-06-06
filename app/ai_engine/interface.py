@@ -513,8 +513,12 @@ def generate_caption(description: str, user_input: str,
                      price: Optional[float] = None,
                      sizes: str = "") -> GeneratedContent:
     """Generate complete Instagram caption from image description."""
+    backend = _detect_backend()
     try:
-        return _generate_with_ollama(description, user_input, price, sizes)
+        if backend == "openrouter":
+            return _generate_with_openrouter(description, user_input, price, sizes)
+        else:
+            return _generate_with_ollama(description, user_input, price, sizes)
     except Exception as e:
         print(f"[AI Engine] generate_caption error: {e}")
         return _generate_manual(description, user_input, price, sizes)
@@ -599,6 +603,89 @@ def _generate_with_ollama(description: str, user_input: str,
             pass
 
     # Fallback: parse manually
+    return _generate_manual(description, user_input, price, sizes)
+
+
+def _generate_with_openrouter(description: str, user_input: str,
+                              price: Optional[float], sizes: str) -> GeneratedContent:
+    """Use texto model via OpenRouter para gerar legenda."""
+    api_key = _openrouter_key()
+    if not api_key:
+        raise ValueError("OpenRouter: chave não configurada")
+
+    price_str = f"R$ {price:.2f}".replace('.', ',') if price else "não informado"
+    sizes_str = sizes if sizes else "não informado"
+
+    # Settings from Supabase
+    store_name = "Minha Loja"
+    brand_voice = "amigavel"
+    try:
+        from app.backend.services.post_service import get_settings
+        s = get_settings()
+        store_name = s.get("store_name", "Minha Loja")
+        brand_voice = s.get("brand_voice", "amigavel")
+    except Exception:
+        pass
+
+    prompt = (
+        f"Você é redator(a) da loja de roupas {store_name}.\n"
+        f"Tom de voz: {brand_voice}.\n\n"
+        "Com base nos dados abaixo, crie uma legenda para Instagram.\n"
+        "Máximo 180 palavras. Use emojis com moderação.\n"
+        "Escreva TUDO em português brasileiro.\n\n"
+        f"DESCRIÇÃO DA IMAGEM:\n{description}\n\n"
+        f"O QUE A DONA ESCREVEU:\n{user_input}\n\n"
+        f"PREÇO: {price_str}\n"
+        f"TAMANHOS: {sizes_str}\n\n"
+        "REGRAS:\n"
+        "- NÃO invente promoções, descontos ou liquidações\n"
+        "- NÃO invente preços diferentes do informado\n"
+        "- NÃO invente tamanhos que não foram informados\n"
+        "- Se preço ou tamanhos não foram informados, não mencione\n"
+        "- LEGENDA DEVE SER EM PORTUGUÊS BRASILEIRO\n\n"
+        "Responda EXATAMENTE neste formato JSON:\n"
+        f"{{\n"
+        '  "legenda": "texto da legenda aqui",\n'
+        '  "cta": "chamada para ação",\n'
+        '  "hashtags": ["#tag1", "#tag2", ...],\n'
+        '  "categoria": "look"\n'
+        f"}}"
+    )
+
+    payload = {
+        "model": "meta-llama/llama-3.2-3b-instruct:free",
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 512,
+        "temperature": 0.6,
+    }
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
+    r = requests.post(
+        f"{OPENROUTER_BASE}/chat/completions",
+        json=payload, headers=headers,
+        timeout=_OPENROUTER_TIMEOUT,
+    )
+    r.raise_for_status()
+    raw = r.json()["choices"][0]["message"]["content"].strip()
+
+    import re
+    json_match = re.search(r'\{.*"legenda".*"categoria".*\}', raw, re.DOTALL)
+    if json_match:
+        try:
+            data = json.loads(json_match.group())
+            return GeneratedContent(
+                caption=data.get("legenda", ""),
+                cta=data.get("cta", ""),
+                hashtags=data.get("hashtags", []),
+                category=data.get("categoria", "look"),
+            )
+        except json.JSONDecodeError:
+            pass
+
     return _generate_manual(description, user_input, price, sizes)
 
 

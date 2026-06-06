@@ -1,0 +1,13 @@
+.env
+.env.*
+*.pyc
+__pycache__/
+.git/
+.gitignore
+README.md
+storage/
+download_*.txt
+matriz_ia.py
+minha_primeira_ia.py
+start.bat
+_check_ram.py
