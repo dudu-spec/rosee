@@ -40,15 +40,18 @@ app.include_router(settings.router)
 app.include_router(chat.router)
 
 
-INDEX_HTML_CONTENT: str | None = None
+FRONTEND_HTML: str | None = None
 
 @app.on_event("startup")
 def startup():
-    global INDEX_HTML_CONTENT
+    global FRONTEND_HTML
     init_db()
-    p = Path("public/index.html").resolve()
-    if p.exists():
-        INDEX_HTML_CONTENT = p.read_text(encoding="utf-8")
+    try:
+        p = Path("public/index.html").resolve()
+        if p.exists():
+            FRONTEND_HTML = p.read_text(encoding="utf-8")
+    except Exception:
+        pass
     try:
         from app.scheduler.jobs import run_pending_posts
         run_pending_posts()
@@ -58,20 +61,14 @@ def startup():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "app": "Rosee Instagram Automation"}
+    return {"status": "ok", "app": "Rosee Instagram Automation", "frontend_loaded": FRONTEND_HTML is not None, "frontend_size": len(FRONTEND_HTML) if FRONTEND_HTML else 0}
 
 
 @app.get("/")
-async def serve_root():
-    if INDEX_HTML_CONTENT is not None:
-        return HTMLResponse(content=INDEX_HTML_CONTENT, status_code=200)
-    return JSONResponse(status_code=404, content={"detail": "Frontend not built"})
-
-
 @app.get("/{full_path:path}")
-async def serve_frontend(full_path: str):
+async def serve_frontend(full_path: str = ""):
     if full_path.startswith("api/"):
         return JSONResponse(status_code=404, content={"detail": "Not found"})
-    if INDEX_HTML_CONTENT is not None:
-        return HTMLResponse(content=INDEX_HTML_CONTENT, status_code=200)
+    if FRONTEND_HTML is not None:
+        return HTMLResponse(content=FRONTEND_HTML, status_code=200)
     return JSONResponse(status_code=404, content={"detail": "Frontend not built"})
