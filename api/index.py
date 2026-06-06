@@ -2,8 +2,10 @@
 import os
 os.environ["VERCEL"] = "1"
 
-import requests
+import sys
+from pathlib import Path
+_root = Path(__file__).resolve().parent.parent
+if str(_root) not in sys.path:
+    sys.path.insert(0, str(_root))
 
-def app(environ, start_response):
-    start_response("200 OK", [("Content-Type", "application/json")])
-    return [f'{{"status":"ok","requests":"{requests.__version__}"}}'.encode()]
+from app.backend.main import app
