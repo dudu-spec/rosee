@@ -149,14 +149,14 @@ class MetaClient:
             "client_secret": self.app_secret,
             "fb_exchange_token": self.access_token,
         }
-        result = self._request("GET", "/oauth/access_token", params=params)
+        result = self._request("GET", "oauth/access_token", params=params)
         self.access_token = result.get("access_token", self.access_token)
         return self.access_token
 
     def get_token_expiry(self) -> Optional[int]:
         """Check days until token expiry. Returns None if unknown."""
         try:
-            result = self._request("GET", "/debug_token",
+            result = self._request("GET", "debug_token",
                                    params={"input_token": self.access_token})
             data = result.get("data", {})
             expires_at = data.get("expires_at", 0)

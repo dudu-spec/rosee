@@ -13,8 +13,15 @@ from app.backend.config import MOCK_META_API
 logger = logging.getLogger(__name__)
 BRASIL_TZ = timezone(timedelta(hours=-3))
 
-scheduler = BackgroundScheduler(timezone=BRASIL_TZ)
-scheduler.start()
+_scheduler = None
+
+
+def get_scheduler():
+    global _scheduler
+    if _scheduler is None:
+        _scheduler = BackgroundScheduler(timezone=BRASIL_TZ)
+        _scheduler.start()
+    return _scheduler
 
 
 def publish_post(post_id: str):
@@ -109,12 +116,13 @@ def schedule_post(post_id: str, scheduled_at_iso: str):
         return
 
     job_id = f"publish_{post_id}"
+    sched = get_scheduler()
 
-    existing = scheduler.get_job(job_id)
+    existing = sched.get_job(job_id)
     if existing:
-        scheduler.remove_job(job_id)
+        sched.remove_job(job_id)
 
-    scheduler.add_job(
+    sched.add_job(
         publish_post,
         trigger=DateTrigger(run_date=sched_dt),
         args=[post_id],
@@ -129,29 +137,32 @@ def schedule_post(post_id: str, scheduled_at_iso: str):
 def cancel_schedule(post_id: str):
     """Cancel a scheduled post."""
     job_id = f"publish_{post_id}"
-    existing = scheduler.get_job(job_id)
+    existing = get_scheduler().get_job(job_id)
     if existing:
-        scheduler.remove_job(job_id)
+        get_scheduler().remove_job(job_id)
         logger.info(f"Agendamento cancelado para post {post_id}")
 
 
 def run_pending_posts():
-    """On startup, publish any posts that were scheduled but missed."""
+    """On startup, publish any overdue posts and re-schedule future pending ones."""
     now = datetime.now(BRASIL_TZ).isoformat()
+    sched = get_scheduler()
     rows = table("posts").select(
         columns="id,scheduled_at",
         eq={"status": "agendado"},
-        lte={"scheduled_at": now},
     )
     for row in rows:
-        logger.info(f"Publicando post atrasado: {row['id']}")
-        publish_post(row["id"])
+        if row.get("scheduled_at") and row["scheduled_at"] <= now:
+            logger.info(f"Publicando post atrasado: {row['id']}")
+            publish_post(row["id"])
+        elif row.get("scheduled_at"):
+            schedule_post(row["id"], row["scheduled_at"])
 
 
 def list_scheduled_jobs():
     """List all scheduled jobs for display."""
     jobs = []
-    for job in scheduler.get_jobs():
+    for job in get_scheduler().get_jobs():
         if job.name.startswith("Publicar post "):
             jobs.append({
                 "post_id": job.args[0],

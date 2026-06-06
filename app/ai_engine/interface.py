@@ -124,10 +124,6 @@ def _detect_backend():
     _MODEL_BACKEND = None
     return _MODEL_BACKEND
 
-    # Fallback: mock
-    _MODEL_BACKEND = "mock"
-    return _MODEL_BACKEND
-
 
 # ── Ollama helpers ──
 
@@ -534,28 +530,10 @@ def _generate_with_ollama(description: str, user_input: str,
     store_name = "Minha Loja"
     brand_voice = "amigavel"
     try:
-        import os
-        from pathlib import Path
-        from dotenv import load_dotenv
-        dotenv_path = Path(__file__).resolve().parent.parent.parent / ".env"
-        if dotenv_path.exists():
-            load_dotenv(str(dotenv_path))
-        supabase_url = os.getenv("SUPABASE_URL", "").rstrip("/")
-        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "") or os.getenv("SUPABASE_ANON_KEY", "")
-        if supabase_url and supabase_key:
-            r = requests.get(
-                f"{supabase_url}/rest/v1/settings?select=key,value",
-                headers={
-                    "apikey": supabase_key,
-                    "Authorization": f"Bearer {supabase_key}",
-                    "Content-Type": "application/json",
-                },
-                timeout=10,
-            )
-            if r.status_code == 200:
-                for row in r.json():
-                    if row["key"] == "store_name": store_name = row["value"]
-                    if row["key"] == "brand_voice": brand_voice = row["value"]
+        from app.backend.services.post_service import get_settings
+        s = get_settings()
+        store_name = s.get("store_name", "Minha Loja")
+        brand_voice = s.get("brand_voice", "amigavel")
     except Exception:
         pass
 

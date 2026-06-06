@@ -15,6 +15,16 @@ class ApproveRequest(BaseModel):
     scheduled_at: str
     final_template_id: str = ""
 
+    from pydantic import validator
+    @validator("scheduled_at")
+    def validate_date(cls, v):
+        from datetime import datetime
+        try:
+            datetime.fromisoformat(v)
+        except ValueError:
+            raise ValueError(f"Data inválida: '{v}'. Use formato ISO (YYYY-MM-DDTHH:MM).")
+        return v
+
 
 @router.post("/upload")
 async def upload_post(
@@ -177,6 +187,18 @@ def batch_upload(req: BatchUploadRequest):
     folder = Path(req.folder_path)
     if not folder.exists() or not folder.is_dir():
         raise HTTPException(status_code=400, detail="Pasta não encontrada.")
+
+    # Security: resolve real path and restrict to known directories
+    folder = folder.resolve()
+    allowed_prefixes = [
+        Path.home() / "Desktop",
+        Path.home() / "Documents",
+        Path.home() / "Pictures",
+        Path.home() / "Downloads",
+        Path.home() / "OneDrive",
+    ]
+    if not any(str(folder).startswith(str(p)) for p in allowed_prefixes if p.exists()):
+        raise HTTPException(status_code=403, detail="Acesso negado: pasta fora dos diretórios permitidos (Desktop, Documents, Pictures, Downloads).")
 
     valid_exts = {'.jpg', '.jpeg', '.png'}
     image_files = [f for f in folder.iterdir()

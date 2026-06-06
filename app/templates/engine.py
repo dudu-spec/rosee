@@ -55,7 +55,7 @@ def apply_image_template(media_path: str, template_id: str,
     user_h = config.get("image_height", target_h)
 
     img_resized = img.resize((user_w, user_h), Image.LANCZOS)
-    canvas.paste(img_resized, (user_x, user_y), img_resized if img.mode == 'RGBA' else None)
+    canvas.paste(img_resized, (user_x, user_y), img_resized if img_resized.mode == 'RGBA' else None)
 
     # Apply overlay
     if overlay_path.exists():
@@ -73,9 +73,15 @@ def apply_image_template(media_path: str, template_id: str,
         if font_path and os.path.exists(font_path):
             font = ImageFont.truetype(font_path, font_size)
         else:
-            font = ImageFont.load_default()
+            try:
+                font = ImageFont.load_default(font_size)
+            except TypeError:
+                font = ImageFont.load_default()
     except Exception:
-        font = ImageFont.load_default()
+        try:
+            font = ImageFont.load_default(font_size)
+        except TypeError:
+            font = ImageFont.load_default()
 
     # Draw store name
     if store_name:

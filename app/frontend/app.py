@@ -10,8 +10,10 @@ import plotly.graph_objects as go
 from pathlib import Path
 from datetime import datetime, timezone, timedelta, date, time
 from collections import Counter
+import os
+import html
 
-API_BASE = "http://localhost:8000"
+API_BASE = os.environ.get("API_BASE", "http://localhost:8000")
 BRASIL_TZ = timezone(timedelta(hours=-3))
 
 # ── PAGE CONFIG ──
@@ -422,6 +424,11 @@ def api_delete(path):
         return r.json() if r.status_code == 200 else {"error": r.text}
     except requests.ConnectionError:
         return {"error": "Backend offline"}
+
+
+def safe(text: str) -> str:
+    return html.escape(str(text))
+
 
 def status_badge(status):
     cls = {
@@ -857,7 +864,21 @@ def _render_upload_chat():
             msgs.append({"role": "ai", "content": f"📸 **{len(uploaded_files)} foto(s)** selecionadas! Vou analisar cada uma..."})
             for idx in range(len(uploaded_files)):
                 st.session_state.chat_data[str(idx)] = {"price": None, "sizes": "", "user_input": ""}
+                # Get real AI description from backend
                 desc = f"Foto {idx+1}"
+                try:
+                    buf = io.BytesIO()
+                    uploaded_files[idx].seek(0)
+                    buf.write(uploaded_files[idx].getvalue())
+                    buf.seek(0)
+                    files = {"file": (uploaded_files[idx].name, buf, uploaded_files[idx].type)}
+                    r = requests.post(f"{API_BASE}/api/posts/upload", files=files,
+                                      timeout=30, headers={"accept": "application/json"})
+                    if r.status_code == 200:
+                        data = r.json()
+                        desc = data.get("ai_description", f"Foto {idx+1}")[:120]
+                except Exception:
+                    pass
                 photo_descriptions.append(desc)
                 msgs.append({"role": "ai", "content": f"📷 **Foto {idx+1}:** {desc}"})
                 progress.progress((idx + 1) / len(uploaded_files), text=f"🧠 Analisando foto {idx+1}/{len(uploaded_files)}...")
@@ -1362,8 +1383,8 @@ def render_schedule():
                     <div style="font-size:13px; font-weight:600;">{day_str}</div>
                     <div style="font-size:11px; color:#e91e63;">{time_str}</div>
                 </div>
-                <div style="flex:1; font-size:13px; color:#ccccee;">{cap}...</div>
-                <div style="font-size:11px; color:#8888aa;">{p.get('final_category') or p.get('ai_category', '-')}</div>
+                <div style="flex:1; font-size:13px; color:#ccccee;">{safe(cap)}...</div>
+                <div style="font-size:11px; color:#8888aa;">{safe(p.get('final_category') or p.get('ai_category', '-'))}</div>
             </div>
             """, unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
@@ -1536,16 +1557,16 @@ def render_analytics():
         with col_a2:
             st.markdown('<div class="card"><h4 style="margin:0 0 16px 0; font-weight:600;">📊 Por Categoria</h4>', unsafe_allow_html=True)
             cats = Counter(p.get("final_category") or p.get("ai_category", "look") for p in posts_data)
-        if cats:
-            fig2 = px.pie(names=list(cats.keys()), values=list(cats.values()),
-                color_discrete_sequence=["#e91e63", "#9c27b0", "#2196f3", "#4caf50", "#ff9800"], hole=0.5)
-            fig2.update_layout(height=280, margin=dict(l=10, r=10, t=10, b=10),
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(family="Inter"), showlegend=True, legend=dict(orientation="h", y=-0.1))
-            st.plotly_chart(fig2, use_container_width=True)
-        else:
-            st.markdown('<div style="text-align:center;padding:40px 0;color:#666688;">Nenhum dado ainda</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            if cats:
+                fig2 = px.pie(names=list(cats.keys()), values=list(cats.values()),
+                    color_discrete_sequence=["#e91e63", "#9c27b0", "#2196f3", "#4caf50", "#ff9800"], hole=0.5)
+                fig2.update_layout(height=280, margin=dict(l=10, r=10, t=10, b=10),
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(family="Inter"), showlegend=True, legend=dict(orientation="h", y=-0.1))
+                st.plotly_chart(fig2, use_container_width=True)
+            else:
+                st.markdown('<div style="text-align:center;padding:40px 0;color:#666688;">Nenhum dado ainda</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
 # ──────────────────────────────────────────────
 # PAGE: SETTINGS
@@ -1634,7 +1655,7 @@ def render_settings():
                 else:
                     st.success(f"Conectado! {r.get('message', '')}")
 
-    with tabs[2]:
+    with tabs[3]:
         st.markdown("#### Templates Disponíveis")
         templates_resp = api_get("/api/templates/")
         templates = templates_resp.get("templates", [])
@@ -1647,7 +1668,7 @@ def render_settings():
             with cols[2]:
                 st.caption("✅ Ativo")
 
-    with tabs[3]:
+    with tabs[4]:
         default_hour = st.number_input(
             "Horário padrão de postagem",
             min_value=0, max_value=23,
