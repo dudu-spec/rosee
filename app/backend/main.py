@@ -6,7 +6,7 @@ Run with: uvicorn backend.main:app --reload --port 8000
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pathlib import Path
 
 from app.database.connection import init_db
@@ -40,10 +40,15 @@ app.include_router(settings.router)
 app.include_router(chat.router)
 
 
+INDEX_HTML_CONTENT: str | None = None
+
 @app.on_event("startup")
 def startup():
+    global INDEX_HTML_CONTENT
     init_db()
-    # Publish any posts that were scheduled while backend was offline
+    p = Path("public/index.html").resolve()
+    if p.exists():
+        INDEX_HTML_CONTENT = p.read_text(encoding="utf-8")
     try:
         from app.scheduler.jobs import run_pending_posts
         run_pending_posts()
@@ -55,14 +60,11 @@ def startup():
 def health():
     return {"status": "ok", "app": "Rosee Instagram Automation"}
 
-FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "public"
-INDEX_HTML = FRONTEND_DIR / "index.html"
 
 @app.get("/{full_path:path}")
 async def serve_frontend(full_path: str):
     if full_path.startswith("api/"):
-        from fastapi.responses import JSONResponse
         return JSONResponse(status_code=404, content={"detail": "Not found"})
-    if INDEX_HTML.exists():
-        return FileResponse(str(INDEX_HTML), media_type="text/html")
+    if INDEX_HTML_CONTENT is not None:
+        return HTMLResponse(content=INDEX_HTML_CONTENT, status_code=200)
     return JSONResponse(status_code=404, content={"detail": "Frontend not built"})
